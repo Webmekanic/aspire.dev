@@ -121,6 +121,9 @@ describe('build-time network guard', () => {
 
   const roots = ['src', 'config', 'astro.config.mjs', 'uno.config.ts'];
   const skipped = new Set(['src/data']);
+  // This searches source text for the host; it does not validate a URL. Deriving the host from a parsed URL
+  // keeps CodeQL's js/incomplete-url-substring-sanitization from misreading includes('<host>') as sanitization.
+  const githubApiHost = new URL('https://api.github.com').hostname;
 
   function* sourceFiles(path: string): Generator<string> {
     const rel = relative(frontendRoot, path).split('\\').join('/');
@@ -135,7 +138,7 @@ describe('build-time network guard', () => {
   it('has no api.github.com requests outside scripts/', () => {
     const offenders = roots
       .flatMap((root) => [...sourceFiles(join(frontendRoot, root))])
-      .filter((file) => readFileSync(join(frontendRoot, file), 'utf8').includes('api.github.com'));
+      .filter((file) => readFileSync(join(frontendRoot, file), 'utf8').includes(githubApiHost));
     expect(offenders).toEqual([]);
   });
 });
